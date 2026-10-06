@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CosztorysBuilder - Professional Cost Estimator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .collapse-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            user-select: none;
+            transition: all 0.3s;
+        }
+
+        .collapse-header:hover {
+            transform: translateX(5px);
+        }
+
+        .collapse-toggle {
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
+
+        .collapse-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .search-box {
+            padding: 15px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        .search-box input::placeholder {
+            color: #999;
+        }
+
+        .services-list {
+            max-height: 500px;
+            overflow-y: auto;
+            background: white;
+        }
+
+        .services-list.hidden {
+            display: none;
+        }
+
+        .service-category {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .service-category h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+
+        .service-items {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .service-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            transition: all 0.2s;
+        }
+
+        .service-item:hover {
+            background: white;
+            border-color: #667eea;
+        }
+
+        .service-item.hidden {
+            display: none;
+        }
+
+        .service-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .service-item label {
+            margin: 0;
+            cursor: pointer;
+            flex-grow: 1;
+            font-size: 0.9em;
+        }
+
+        .service-item input[type="number"] {
+            width: 70px;
+            padding: 5px;
+            margin-left: auto;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+
+        .summary {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+            margin-top: 20px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .summary-item.total {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #667eea;
+            padding-top: 15px;
+            margin-top: 15px;
+            border-top: 2px solid #667eea;
+        }
+
+        .variants {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .variants {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .variant-box {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .variant-box:hover {
+            transform: translateY(-5px);
+        }
+
+        .variant-basic {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .variant-standard {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .variant-premium {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            grid-column: 1 / -1;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-pdf {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-pdf:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(245, 87, 108, 0.3);
+        }
+
+        .btn-reset {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-reset:hover {
+            background: #d0d0d0;
+        }
+
+        #pdf-content {
+            display: none;
+            background: white;
+            padding: 40px;
+            font-family: Arial, sans-serif;
+        }
+
+        .pdf-header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 20px;
+        }
+
+        .pdf-header h1 {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .pdf-section {
+            margin-bottom: 30px;
+        }
+
+        .pdf-section h3 {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .pdf-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .pdf-total {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state p {
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ CosztorysBuilder</h1>
+            <p>Professional Cost Estimator - Podlasie Region</p>
+        </div>
+
+        <div class="content">
+            <!-- LEFT SIDE - INPUT -->
+            <div>
+                <div class="section">
+                    <h2>📋 Projekt</h2>
+                    <div class="input-group">
+                        <label>Nazwa projektu</label>
+                        <input type="text" id="projectName" placeholder="np. Elewacja domu przy ul. Warszawskiej">
+                    </div>
+                    <div class="input-group">
+                        <label>Lokalizacja</label>
+                        <input type="text" id="location" placeholder="np. Białystok">
+                    </div>
+                    <div class="input-group">
+                        <label>Data kosztorysu</label>
+                        <input type="text" id="date" readonly>
+                    </div>
+                </div>
+
+                <div class="section" style="margin-top: 20px;">
+                    <div class="collapse-header" onclick="toggleServices()">
+                        <span>🔧 Usługi (<span id="service-count">0</span>)</span>
+                        <span class="collapse-toggle" id="toggle-icon">▼</span>
+                    </div>
+
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="🔍 Szukaj usługi..." onkeyup="filterServices()">
+                    </div>
+
+                    <div class="services-list" id="services-list">
+                        <!-- ELEWACJA -->
+                        <div class="service-category">
+                            <h4>🏠 Elewacja</h4>
+                            <div class="service-items">
+                                <div class="service-item">
+                                    <input type="checkbox" id="cleaning" data-price="23" onchange="updateServiceCount()">
+                                    <label for="cleaning">Czyszczenie elewacji</label>
+                                    <input type="number" id="cleaning-qty" placeholder="m²" min="0" step="0.1" value="0">
+                                </div>
+                                <div class="service-item">
+                                    <input type="checkbox" id="tynkowanie" data-price="54" onchange="updateServiceCount()">
+                                    <label for="tynkowanie">Tynkowanie elewacji</label>
+                                    <input type="number" id="tynkowanie-qty" placeholder="m²" min="0" step="0.1" value="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OCIEPLANIE -->
+                        <div class="service-category">
+                            <h4>🔥 Ocieplanie</h4>
+                            <div class="service-items">
+                                <div class="service-item">
+                                    <input type="checkbox" id="styrofoam" data-price="127" onchange="updateServiceCount()">
+                                    <label for="styrofoam">Ocieplanie styropianem</label>
+                                    <input type="number" id="styrofoam-qty" placeholder="m²" min="0" step="0.1" value="0">
+                                </div>
+                                <div class="service-item">
+                                    <input type="checkbox" id="wool" data-price="173" onchange="updateServiceCount()">
+                                    <label for="wool">Ocieplanie wełną</label>
+                                    <input type="number" id="wool-qty" placeholder="m²" min="0" step="0.1" value="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DACH -->
+                        <div class="service-category">
+                            <h4>🏘️ Dach</h4>
+                            <div class="service-items">
+                                <div class="service-item">
+                                    <input type="checkbox" id="roofing" data-price="39" onchange="updateServiceCount()">
+                                    <label for="roofing">Wymiana poszycia dachowego</label>
+                                    <input type="number" id="roofing-qty" placeholder="m²" min="0" step="0.1" value="0">
+                                </div>
+                                <div class="service-item">
+                                    <input type="checkbox" id="roof-construction" data-price="125" onchange="updateServiceCount()">
+                                    <label for="roof-construction">Wymiana konstrukcji dachowej</label>
+                                    <input type="number" id="roof-construction-qty" placeholder="m²" min="0" step="0.1" value="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- WNĘTRZA -->
+                        <div class="service-category">
+                            <h4>🎨 Wnętrza</h4>
+                            <div class="service-items">
+                                <div class="service-item">
+                                    <input type="checkbox" id="spachtel" data-price="40" onchange="updateServiceCount()">
+                                    <label for="spachtel">Szpachlowanie wnętrz</label>
+                                    <input type="number" id="spachtel-qty" placeholder="m²" min="0" step="0.1" value="0">
+                                </div>
+                                <div class="service-item">
+                                    <input type="checkbox" id="painting" data-price="20" onchange="updateServiceCount()">
+                                    <label for="painting">Malowanie wnętrz</label>
+                                    <input type="number" id="painting-qty" placeholder="m²" min="0" step="0.1" value="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PODŁOŻA -->
+                        <div class="service-category">
+                            <h4>🛏️ Podłoża & Przegrody</h4>
+                            <div class="service-items">
+                                <div class="service-item">
+                                    <input type="checkbox" id="flooring" data-price="25" onchange="updateServiceCount()">
+                                    <label for="flooring">Układanie podłogi</label>
+                                    <input type="number" id="flooring-qty" placeholder="m²" min="0" step="0.1" value="0">
+                                </div>
+                                <div class="service-item">
+                                    <input type="checkbox" id="walls" data-price="95" onchange="updateServiceCount()">
+                                    <label for="walls">Rozstawianie ścianek działowych</label>
+                                    <input type="number" id="walls-qty" placeholder="m²" min="0" step="0.1" value="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="buttons">
+                        <button class="btn-primary" onclick="calculateAndShowVariants()">📊 Oblicz kosztoprys</button>
+                        <button class="btn-pdf" onclick="generatePDF()">📄 Pobierz PDF</button>
+                        <button class="btn-reset" onclick="resetForm()">🔄 Resetuj</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT SIDE - SUMMARY -->
+            <div>
+                <div id="summary-container" class="section">
+                    <h2>💰 Podsumowanie</h2>
+                    <div class="empty-state">
+                        <p>Dodaj usługi i kliknij "Oblicz kosztoprys"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Content (Hidden) -->
+    <div id="pdf-content">
+        <div class="pdf-header">
+            <h1>KOSZTORYS</h1>
+            <p id="pdf-project-info"></p>
+        </div>
+
+        <div class="pdf-section">
+            <h3>Szczegóły pracy</h3>
+            <div class="pdf-row">
+                <span>Projekt:</span>
+                <span id="pdf-name"></span>
+            </div>
+            <div class="pdf-row">
+                <span>Lokalizacja:</span>
+                <span id="pdf-location"></span>
+            </div>
+            <div class="pdf-row">
+                <span>Data:</span>
+                <span id="pdf-date"></span>
+            </div>
+        </div>
+
+        <div class="pdf-section">
+            <h3>Pozycje</h3>
+            <div id="pdf-services"></div>
+        </div>
+
+        <div class="pdf-section">
+            <h3>Warianty wyceny</h3>
+            <div class="pdf-row">
+                <span>Wariant STANDARD:</span>
+                <span id="pdf-standard"></span> PLN
+            </div>
+            <div class="pdf-row">
+                <span>Wariant PREMIUM (+30%):</span>
+                <span id="pdf-premium"></span> PLN
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #667eea;">
+            <p style="color: #666; font-size: 0.9em;">Wycena ważna przez 30 dni | Kontakt: [Twoje dane kontaktowe]</p>
+        </div>
+    </div>
+
+    <script>
+        // Set today's date
+        document.getElementById('date').value = new Date().toLocaleDateString('pl-PL');
+
+        // Toggle services collapse
+        function toggleServices() {
+            const servicesList = document.getElementById('services-list');
+            const toggleIcon = document.getElementById('toggle-icon');
+            servicesList.classList.toggle('hidden');
+            toggleIcon.classList.toggle('open');
+        }
+
+        // Filter services by search
+        function filterServices() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const items = document.querySelectorAll('.service-item');
+            const categories = document.querySelectorAll('.service-category');
+
+            items.forEach(item => {
+                const label = item.querySelector('label').textContent.toLowerCase();
+                const isVisible = label.includes(searchTerm) || searchTerm === '';
+                item.classList.toggle('hidden', !isVisible);
+            });
+
+            // Hide categories with no visible items
+            categories.forEach(category => {
+                const visibleItems = category.querySelectorAll('.service-item:not(.hidden)').length;
+                category.style.display = visibleItems > 0 ? 'block' : 'none';
+            });
+        }
+
+        // Update service count
+        function updateServiceCount() {
+            const count = document.querySelectorAll('input[type="checkbox"]:checked').length;
+            document.getElementById('service-count').textContent = count;
+        }
+
+        function getSelectedServices() {
+            const serviceData = {
+                'cleaning': { name: 'Czyszczenie elewacji', unit: 'm²' },
+                'styrofoam': { name: 'Ocieplanie styropianem', unit: 'm²' },
+                'wool': { name: 'Ocieplanie wełną', unit: 'm²' },
+                'tynkowanie': { name: 'Tynkowanie elewacji', unit: 'm²' },
+                'roofing': { name: 'Wymiana poszycia dachowego', unit: 'm²' },
+                'roof-construction': { name: 'Wymiana konstrukcji dachowej', unit: 'm²' },
+                'spachtel': { name: 'Szpachlowanie wnętrz', unit: 'm²' },
+                'painting': { name: 'Malowanie wnętrz', unit: 'm²' },
+                'flooring': { name: 'Układanie podłogi', unit: 'm²' },
+                'walls': { name: 'Rozstawianie ścianek działowych', unit: 'm²' }
+            };
+
+            const selected = [];
+            
+            // Get all checked checkboxes
+            document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                const id = checkbox.id;
+                const qtyInput = document.getElementById(id + '-qty');
+                const quantity = parseFloat(qtyInput.value) || 0;
+                const price = parseFloat(checkbox.dataset.price);
+                
+                if (quantity > 0 && serviceData[id]) {
+                    selected.push({
+                        id,
+                        name: serviceData[id].name,
+                        unit: serviceData[id].unit,
+                        price,
+                        quantity
+                    });
+                }
+            });
+
+            return selected;
+        }
+
+        function calculateTotal() {
+            return getSelectedServices().reduce((sum, s) => sum + (s.price * s.quantity), 0);
+        }
+
+        function calculateAndShowVariants() {
+            const selected = getSelectedServices();
+            
+            if (selected.length === 0) {
+                alert('Dodaj co najmniej jedną usługę!');
+                return;
+            }
+
+            const total = calculateTotal();
+            const standard = total;
+            const premium = Math.round(total * 1.30 * 100) / 100;
+
+            let html = `<div class="summary">`;
+            
+            // Selected services
+            html += `<h3 style="color: #667eea; margin-bottom: 15px;">Wybrane usługi:</h3>`;
+            selected.forEach(s => {
+                const cost = Math.round(s.price * s.quantity * 100) / 100;
+                html += `<div class="summary-item">
+                    <span>${s.name} (${s.quantity} ${s.unit} × ${s.price} zł)</span>
+                    <span>${cost.toFixed(2)} PLN</span>
+                </div>`;
+            });
+
+            html += `<div class="summary-item total">
+                <span>RAZEM:</span>
+                <span>${standard.toFixed(2)} PLN</span>
+            </div></div>`;
+
+            // Variants
+            html += `<div class="variants">
+                <div class="variant-box variant-standard" onclick="selectVariant('standard', ${standard})">
+                    <div>STANDARD</div>
+                    <div style="font-size: 1.5em; margin-top: 10px;">${standard.toFixed(2)} PLN</div>
+                </div>
+                <div class="variant-box variant-premium" onclick="selectVariant('premium', ${premium})">
+                    <div>PREMIUM (+30%)</div>
+                    <div style="font-size: 1.5em; margin-top: 10px;">${premium.toFixed(2)} PLN</div>
+                </div>
+            </div>`;
+
+            document.getElementById('summary-container').innerHTML = html;
+
+            // Store for PDF
+            window.estimateData = {
+                services: selected,
+                standard,
+                premium,
+                total: standard
+            };
+        }
+
+        function selectVariant(variant, price) {
+            alert(`Wybrałeś wariant: ${variant.toUpperCase()}\nCena: ${price.toFixed(2)} PLN`);
+        }
+
+        function generatePDF() {
+            if (!window.estimateData) {
+                alert('Najpierw oblicz kosztoprys!');
+                return;
+            }
+
+            const data = window.estimateData;
+            const projectName = document.getElementById('projectName').value || 'Projekt bez nazwy';
+            const location = document.getElementById('location').value || 'Brak danych';
+            const date = document.getElementById('date').value;
+
+            try {
+                // Create PDF using jsPDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                
+                let y = 20;
+                const pageWidth = 210;
+                const margin = 15;
+
+                // Header
+                doc.setFont('Helvetica', 'bold');
+                doc.setFontSize(24);
+                doc.text('KOSZTORYS', pageWidth / 2, y, { align: 'center' });
+                
+                y += 12;
+                doc.setFont('Helvetica', 'normal');
+                doc.setFontSize(10);
+                doc.text(projectName, pageWidth / 2, y, { align: 'center' });
+                y += 5;
+                doc.text(`Lokalizacja: ${location}`, pageWidth / 2, y, { align: 'center' });
+                y += 5;
+                doc.text(`Data: ${date}`, pageWidth / 2, y, { align: 'center' });
+
+                y += 8;
+                doc.setDrawColor(102, 126, 234);
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 8;
+
+                // Services
+                doc.setFont('Helvetica', 'bold');
+                doc.setFontSize(11);
+                doc.text('Pozycje pracy:', margin, y);
+                y += 7;
+
+                doc.setFont('Helvetica', 'normal');
+                doc.setFontSize(9);
+                
+                data.services.forEach((s, idx) => {
+                    const cost = Math.round(s.price * s.quantity * 100) / 100;
+                    const line = `${idx + 1}. ${s.name}: ${s.quantity} ${s.unit} × ${s.price} zł = ${cost.toFixed(2)} zł`;
+                    
+                    if (y > 270) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                    
+                    doc.text(line, margin + 2, y);
+                    y += 5;
+                });
+
+                y += 5;
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 8;
+
+                // Variants
+                doc.setFont('Helvetica', 'bold');
+                doc.setFontSize(11);
+                doc.text('Warianty wyceny:', margin, y);
+                y += 7;
+
+                doc.setFont('Helvetica', 'normal');
+                doc.setFontSize(10);
+                doc.text(`STANDARD: ${data.standard.toFixed(2)} PLN`, margin + 5, y);
+                y += 6;
+                doc.text(`PREMIUM (+30%): ${data.premium.toFixed(2)} PLN`, margin + 5, y);
+
+                // Footer
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text('Wycena ważna przez 30 dni', margin, doc.internal.pageSize.getHeight() - 8);
+
+                // Direct download
+                doc.save(`Kosztorys_${projectName.replace(/\s/g, '_')}.pdf`);
+                alert('✅ PDF został pobrany!\n\nSprawdź folder Downloads');
+            } catch (error) {
+                console.error('PDF Error:', error);
+                alert('❌ Błąd przy generowaniu PDF. Spróbuj ponownie.');
+            }
+        }
+
+        function resetForm() {
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('input[type="number"]').forEach(inp => inp.value = '0');
+            document.getElementById('projectName').value = '';
+            document.getElementById('location').value = '';
+            document.getElementById('summary-container').innerHTML = `
+                <h2>💰 Podsumowanie</h2>
+                <div class="empty-state">
+                    <p>Dodaj usługi i kliknij "Oblicz kosztoprys"</p>
+                </div>
+            `;
+            window.estimateData = null;
+        }
+    </script>
+</body>
+</html>
