@@ -754,8 +754,10 @@
             let items = [];
             let total = 0;
 
-            checkboxes.forEach((cb, idx) => {
-                const qty = parseFloat(document.getElementById(`qty-${idx}`).value) || 0;
+            checkboxes.forEach((cb) => {
+                const serviceId = cb.id.replace('service-', ''); // Get correct ID
+                const qtyInput = document.getElementById(`qty-${serviceId}`);
+                const qty = parseFloat(qtyInput.value) || 0;
                 if (qty > 0) {
                     const price = parseFloat(cb.dataset.price);
                     const cost = qty * price;
